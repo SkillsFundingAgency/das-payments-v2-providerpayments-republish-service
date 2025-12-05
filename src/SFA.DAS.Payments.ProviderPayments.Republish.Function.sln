@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.8.34601.278
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SFA.DAS.Payments.ProviderPayments.Republish.Function", "SFA.DAS.Payments.ProviderPayments.Republish.Function\SFA.DAS.Payments.ProviderPayments.Republish.Function.csproj", "{5D82094E-87D8-487E-8BAA-C11AF32FC618}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SFA.DAS.Payments.ProviderPayments.Republish.Function.Tests", "SFA.DAS.Payments.ProviderPayments.Republish.Function.Tests\SFA.DAS.Payments.ProviderPayments.Republish.Function.Tests.csproj", "{F51D89AE-4BD4-4D9A-8C1B-9D534E9268E6}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{5D82094E-87D8-487E-8BAA-C11AF32FC618}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5D82094E-87D8-487E-8BAA-C11AF32FC618}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5D82094E-87D8-487E-8BAA-C11AF32FC618}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5D82094E-87D8-487E-8BAA-C11AF32FC618}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F51D89AE-4BD4-4D9A-8C1B-9D534E9268E6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F51D89AE-4BD4-4D9A-8C1B-9D534E9268E6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F51D89AE-4BD4-4D9A-8C1B-9D534E9268E6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F51D89AE-4BD4-4D9A-8C1B-9D534E9268E6}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {EA8F4D53-A8C1-4192-909A-FB9B9946A980}
+	EndGlobalSection
+EndGlobal
