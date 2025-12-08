@@ -1,0 +1,18 @@
+{
+  "IsEncrypted": false,
+    "Values": {
+        "AzureWebJobsStorage": "UseDevelopmentStorage=true",
+        "ApplicationInsightsInstrumentationKey": "",
+        "FUNCTIONS_INPROC_NET8_ENABLED": "1",
+        "FUNCTIONS_WORKER_RUNTIME": "dotnet",
+        "ServiceBusConnectionString": "",
+        "EndpointName": "sfa-das-payments-providerpayments-republish",
+        "DestinationEndpointName": "sfa-das-payments-providerpayments",
+        "FailedMessagesQueue": "sfa-das-payments-providerpayments-republish-errors",
+        "NServiceBusLicense": "",
+        "StorageConnectionString": "UseDevelopmentStorage=true",
+        "ImmediateMessageRetries": "1",
+        "DelayedMessageRetries": "3",
+        "DelayedMessageRetryDelay": "00:00:10"
+    }
+}
