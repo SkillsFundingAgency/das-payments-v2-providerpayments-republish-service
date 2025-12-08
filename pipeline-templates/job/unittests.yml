@@ -1,7 +1,7 @@
 jobs:
 - job: UnitTests
   pool:
-    name: DCT Build Pool
+    name: DCT
     workspace:
       clean: all
   
