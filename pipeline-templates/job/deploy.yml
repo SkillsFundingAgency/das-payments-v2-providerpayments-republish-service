@@ -5,12 +5,6 @@ parameters:
   environmentName:
   appName:
 
-# ----------------------
-# Variable Group (TOP LEVEL)
-# ----------------------
-variables:
-- group: DCOL-DST - ProviderPaymentsRepublishService   # Replace with your variable group name
-
 jobs:
 - deployment: DeployAzureFunctionApp
   pool:
@@ -27,35 +21,29 @@ jobs:
       deploy:
         steps:
 
-        # ----------------------
-        # Set Azure App Settings
-        # ----------------------
         - task: AzureAppServiceSettings@1
           displayName: 'Apply Function App Settings'
           inputs:
             azureSubscription: ${{ parameters.azureSubscription }}
             appName: ${{ parameters.appName }}
-            resourceGroupName: ''  # Fill if required
+            resourceGroupName: ''
             appSettings: |
               [
-                { "name": "AzureWebJobsStorage", "value": "$(AzureWebJobsStorage)", "slotSetting": false },
-                { "name": "ApplicationInsightsInstrumentationKey", "value": "$(ApplicationInsightsInstrumentationKey)", "slotSetting": false },
-                { "name": "FUNCTIONS_INPROC_NET8_ENABLED", "value": "$(FUNCTIONS_INPROC_NET8_ENABLED)", "slotSetting": false },
-                { "name": "FUNCTIONS_WORKER_RUNTIME", "value": "$(FUNCTIONS_WORKER_RUNTIME)", "slotSetting": false },
-                { "name": "ServiceBusConnectionString", "value": "$(ServiceBusConnectionString)", "slotSetting": false },
-                { "name": "EndpointName", "value": "$(EndpointName)", "slotSetting": false },
-                { "name": "FailedMessagesQueue", "value": "$(FailedMessagesQueue)", "slotSetting": false },
-                { "name": "DestinationEndpointName", "value": "$(DestinationEndpointName)", "slotSetting": false },
-                { "name": "NServiceBusLicense", "value": "$(NServiceBusLicense)", "slotSetting": false },
-                { "name": "StorageConnectionString", "value": "$(StorageConnectionString)", "slotSetting": false },
-                { "name": "ImmediateMessageRetries", "value": "$(ImmediateMessageRetries)", "slotSetting": false },
-                { "name": "DelayedMessageRetries", "value": "$(DelayedMessageRetries)", "slotSetting": false },
-                { "name": "DelayedMessageRetryDelay", "value": "$(DelayedMessageRetryDelay)", "slotSetting": false }
+                { "name": "AzureWebJobsStorage", "value": "$(AzureWebJobsStorage)" },
+                { "name": "ApplicationInsightsInstrumentationKey", "value": "$(ApplicationInsightsInstrumentationKey)" },
+                { "name": "FUNCTIONS_INPROC_NET8_ENABLED", "value": "$(FUNCTIONS_INPROC_NET8_ENABLED)" },
+                { "name": "FUNCTIONS_WORKER_RUNTIME", "value": "$(FUNCTIONS_WORKER_RUNTIME)" },
+                { "name": "ServiceBusConnectionString", "value": "$(ServiceBusConnectionString)" },
+                { "name": "EndpointName", "value": "$(EndpointName)" },
+                { "name": "FailedMessagesQueue", "value": "$(FailedMessagesQueue)" },
+                { "name": "DestinationEndpointName", "value": "$(DestinationEndpointName)" },
+                { "name": "NServiceBusLicense", "value": "$(NServiceBusLicense)" },
+                { "name": "StorageConnectionString", "value": "$(StorageConnectionString)" },
+                { "name": "ImmediateMessageRetries", "value": "$(ImmediateMessageRetries)" },
+                { "name": "DelayedMessageRetries", "value": "$(DelayedMessageRetries)" },
+                { "name": "DelayedMessageRetryDelay", "value": "$(DelayedMessageRetryDelay)" }
               ]
 
-        # ----------------------
-        # Deploy Function App
-        # ----------------------
         - task: AzureFunctionApp@1
           displayName: 'Azure Function App Deploy'
           inputs:
