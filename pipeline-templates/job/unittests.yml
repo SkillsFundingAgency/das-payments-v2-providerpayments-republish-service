@@ -65,5 +65,5 @@ jobs:
   - task: PublishPipelineArtifact@1
     displayName: 'Publish Pipeline Artifact'
     inputs:
-      targetPath: '$(build.artifactstagingdirectory)\ProviderPayments-RepublishitUnTestsUnitTests'
+      targetPath: '$(build.artifactstagingdirectory)\ProviderPayments-RepublishitUnTests'
       artifact: ProviderPayments-RepublishFunctionUnitTests
