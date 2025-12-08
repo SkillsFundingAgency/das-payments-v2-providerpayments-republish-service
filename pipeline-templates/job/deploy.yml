@@ -4,7 +4,10 @@ parameters:
   location: 'West Europe'
   environmentName:
   appName:
-  
+
+variables:
+- group: DCOL-DST - ProviderPaymentsRepublishServicebleGroup   
+
 jobs:
 - deployment: DeployAzureFunctionApp
   pool:
@@ -13,15 +16,44 @@ jobs:
     - ReleaseEnvironment -equals ${{ parameters.environmentName }}
     workspace:
       clean: all
+
   environment: ${{ parameters.environmentName }}
-  
-  
+
   strategy:
     runOnce:
       deploy:
         steps:
+
+        # -------------------------------
+        # 1. Push App Settings to Azure
+        # -------------------------------
+        - task: AzureAppServiceSettings@1
+          displayName: "Apply Function App Settings"
+          inputs:
+            azureSubscription: ${{ parameters.azureSubscription }}
+            appName: ${{ parameters.appName }}
+            appSettings: |
+              [
+                { "name": "AzureWebJobsStorage", "value": "$(AzureWebJobsStorage)", "slotSetting": false },
+                { "name": "ApplicationInsightsInstrumentationKey", "value": "$(ApplicationInsightsInstrumentationKey)", "slotSetting": false },
+                { "name": "FUNCTIONS_INPROC_NET8_ENABLED", "value": "$(FUNCTIONS_INPROC_NET8_ENABLED)", "slotSetting": false },
+                { "name": "FUNCTIONS_WORKER_RUNTIME", "value": "$(FUNCTIONS_WORKER_RUNTIME)", "slotSetting": false },
+                { "name": "ServiceBusConnectionString", "value": "$(ServiceBusConnectionString)", "slotSetting": false },
+                { "name": "EndpointName", "value": "$(EndpointName)", "slotSetting": false },
+                { "name": "FailedMessagesQueue", "value": "$(FailedMessagesQueue)", "slotSetting": false },
+                { "name": "DestinationEndpointName", "value": "$(DestinationEndpointName)", "slotSetting": false },
+                { "name": "NServiceBusLicense", "value": "$(NServiceBusLicense)", "slotSetting": false },
+                { "name": "StorageConnectionString", "value": "$(StorageConnectionString)", "slotSetting": false },
+                { "name": "ImmediateMessageRetries", "value": "$(ImmediateMessageRetries)", "slotSetting": false },
+                { "name": "DelayedMessageRetries", "value": "$(DelayedMessageRetries)", "slotSetting": false },
+                { "name": "DelayedMessageRetryDelay", "value": "$(DelayedMessageRetryDelay)", "slotSetting": false }
+              ]
+
+        # -------------------------------
+        # 2. Deploy Function App Package
+        # -------------------------------
         - task: AzureFunctionApp@1
-          displayName: 'Azure Function App Deploy'
+          displayName: "Azure Function App Deploy"
           inputs:
             azureSubscription: ${{ parameters.azureSubscription }}
             appType: functionApp
