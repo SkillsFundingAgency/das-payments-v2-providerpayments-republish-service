@@ -11,7 +11,7 @@ jobs:
      
   - group: BUILD Management Resources
   steps:
-  - template: pipelines-templates/job/gitversion.yml
+  - template: /azure-pipelines-templates/build/step/gitversion.yml
 
   
   - task: UseDotNet@2
