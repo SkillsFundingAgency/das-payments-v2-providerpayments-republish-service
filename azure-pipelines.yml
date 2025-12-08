@@ -50,7 +50,7 @@ stages:
   - group: DCOL-DAS - Environment Key Vault Secrets
   - group: DCOL-DAS - ProviderPaymentsRepublishService
   jobs:
-  - template: pipeline-templates/deploy.yml
+  - template: pipeline-templates/job/deploy.yml
     parameters:
       pool: DCT
       environmentName: DAS
