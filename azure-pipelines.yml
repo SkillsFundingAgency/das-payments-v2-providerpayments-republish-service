@@ -11,10 +11,10 @@ variables:
   value: 'release'
 resources:
   repositories:
-    - repository: das-payments-v2-monitoring-alerts
+    - repository: das-payments-v2-providerpayments-republish-service
       fetchDepth: 0
       type: github
-      name: SkillsFundingAgency/das-payments-v2-monitoring-alerts
+      name: SkillsFundingAgency/das-payments-v2-providerpayments-republish-service
       endpoint: SkillsFundingAgency
 
 stages:
