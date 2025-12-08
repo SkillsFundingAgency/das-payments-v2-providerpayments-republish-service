@@ -5,8 +5,11 @@ parameters:
   environmentName:
   appName:
 
+# ----------------------
+# Variable Group (TOP LEVEL)
+# ----------------------
 variables:
-- group: DCOL-DST - ProviderPaymentsRepublishServicebleGroup   
+- group: DCOL-DST - ProviderPaymentsRepublishService   # Replace with your variable group name
 
 jobs:
 - deployment: DeployAzureFunctionApp
@@ -24,14 +27,15 @@ jobs:
       deploy:
         steps:
 
-        # -------------------------------
-        # 1. Push App Settings to Azure
-        # -------------------------------
+        # ----------------------
+        # Set Azure App Settings
+        # ----------------------
         - task: AzureAppServiceSettings@1
-          displayName: "Apply Function App Settings"
+          displayName: 'Apply Function App Settings'
           inputs:
             azureSubscription: ${{ parameters.azureSubscription }}
             appName: ${{ parameters.appName }}
+            resourceGroupName: ''  # Fill if required
             appSettings: |
               [
                 { "name": "AzureWebJobsStorage", "value": "$(AzureWebJobsStorage)", "slotSetting": false },
@@ -49,11 +53,11 @@ jobs:
                 { "name": "DelayedMessageRetryDelay", "value": "$(DelayedMessageRetryDelay)", "slotSetting": false }
               ]
 
-        # -------------------------------
-        # 2. Deploy Function App Package
-        # -------------------------------
+        # ----------------------
+        # Deploy Function App
+        # ----------------------
         - task: AzureFunctionApp@1
-          displayName: "Azure Function App Deploy"
+          displayName: 'Azure Function App Deploy'
           inputs:
             azureSubscription: ${{ parameters.azureSubscription }}
             appType: functionApp
