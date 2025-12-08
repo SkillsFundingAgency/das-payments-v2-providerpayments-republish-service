@@ -48,19 +48,19 @@ jobs:
       modifyOutputPath: false
       vstsFeed: '1d5deb2d-cf8b-4bb1-b147-d13bc246e3f4'
 
-  - task: MSBuild@1
-    displayName: 'Build solution ProviderPayments.Republish.Function'
-    inputs:
-      solution: src/SFA.DAS.Payments.ProviderPayments.Republish.Function.Tests/SFA.DAS.Payments.ProviderPayments.Republish.Function.Tests.csproj
-      msbuildArchitecture: x64
-      platform: '$(BuildPlatform)'
-      configuration: '$(BuildConfiguration)'
-      msbuildArguments: '/p:version=$(Build.BuildNumber) /p:FileVersion=$(Build.BuildNumber) /p:OutputPath=$(build.artifactstagingdirectory)\ProviderPayments-RepublishitUnTests'
-      clean: true
-      maximumCpuCount: true
-      logProjectEvents: true
-      createLogFile: true
-      enabled: false
+  #- task: MSBuild@1
+  #  displayName: 'Build solution ProviderPayments.Republish.Function'
+  #  inputs:
+  #    solution: src/SFA.DAS.Payments.ProviderPayments.Republish.Function.Tests/SFA.DAS.Payments.ProviderPayments.Republish.Function.Tests.csproj
+  #    msbuildArchitecture: x64
+  #    platform: '$(BuildPlatform)'
+  #    configuration: '$(BuildConfiguration)'
+  #    msbuildArguments: '/p:version=$(Build.BuildNumber) /p:FileVersion=$(Build.BuildNumber) /p:OutputPath=$(build.artifactstagingdirectory)\ProviderPayments-RepublishitUnTests'
+  #    clean: true
+  #    maximumCpuCount: true
+  #    logProjectEvents: true
+  #    createLogFile: true
+  #    enabled: false
 
   - task: PublishPipelineArtifact@1
     displayName: 'Publish Pipeline Artifact'
