@@ -66,7 +66,7 @@ stages:
   - group: DCOL-SIT - Environment Key Vault Secrets
   - group: DCOL-SIT - ProviderPaymentsRepublishService
   jobs:
-  - template: pipeline-templates/deploy.yml
+  - template: pipeline-templates/job/deploy.yml
     parameters:
       pool: DCT Build Pool
       environmentName: SIT
@@ -82,7 +82,7 @@ stages:
   - group: DCOL-ETE - Environment Key Vault Secrets
   - group: DCOL-ETE - ProviderPaymentsRepublishService
   jobs:
-  - template: pipeline-templates/deploy.yml
+  - template: pipeline-templates/job/deploy.yml
     parameters:
       pool: DCT Build Pool
       environmentName: ETE
