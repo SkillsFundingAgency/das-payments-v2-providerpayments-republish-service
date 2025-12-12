@@ -89,5 +89,22 @@ stages:
       azureSubscription: DCT-VSO
       appName: DCOL-ETE-ProviderPaymentsRepublishService
 
+- stage: Deploy_MO
+  dependsOn: Deploy_ETE
+  displayName: Deploy to MO
+  variables:
+  - name: tagEnvironment
+    value: Dev/Test
+  - group: DCOL-MO - Environment Key Vault Secrets
+  - group: DCOL-MO - ProviderPaymentsRepublishService
+  jobs:
+  - template: pipeline-templates/job/deploy.yml
+    parameters:
+      pool: DCT Build Pool
+      environmentName: MO
+      azureSubscription: DCOL-MO-VSTS
+      appName: DCOL-MO-ProviderPaymentsRepublishService
+
+
 
 
