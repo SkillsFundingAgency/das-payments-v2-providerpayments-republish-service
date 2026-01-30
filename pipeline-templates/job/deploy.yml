@@ -1,0 +1,53 @@
+parameters:
+  pool:
+  azureSubscription:
+  location: 'West Europe'
+  environmentName:
+  appName:
+
+jobs:
+- deployment: DeployAzureFunctionApp
+  pool:
+    name: ${{ parameters.pool }}
+    demands:
+    - ReleaseEnvironment -equals ${{ parameters.environmentName }}
+    workspace:
+      clean: all
+
+  environment: ${{ parameters.environmentName }}
+
+  strategy:
+    runOnce:
+      deploy:
+        steps:
+
+        - task: AzureAppServiceSettings@1
+          displayName: 'Apply Function App Settings'
+          inputs:
+            azureSubscription: ${{ parameters.azureSubscription }}
+            appName: ${{ parameters.appName }}
+            resourceGroupName: ''
+            appSettings: |
+              [
+                { "name": "AzureWebJobsStorage", "value": "$(AzureWebJobsStorage)" },
+                { "name": "ApplicationInsightsInstrumentationKey", "value": "$(ApplicationInsightsInstrumentationKey)" },
+                { "name": "FUNCTIONS_INPROC_NET8_ENABLED", "value": "$(FUNCTIONS_INPROC_NET8_ENABLED)" },
+                { "name": "FUNCTIONS_WORKER_RUNTIME", "value": "$(FUNCTIONS_WORKER_RUNTIME)" },
+                { "name": "ServiceBusConnectionString", "value": "$(ServiceBusConnectionString)" },
+                { "name": "EndpointName", "value": "$(EndpointName)" },
+                { "name": "FailedMessagesQueue", "value": "$(FailedMessagesQueue)" },
+                { "name": "DestinationEndpointName", "value": "$(DestinationEndpointName)" },
+                { "name": "NServiceBusLicense", "value": "$(NServiceBusLicense)" },
+                { "name": "StorageConnectionString", "value": "$(StorageConnectionString)" },
+                { "name": "ImmediateMessageRetries", "value": "$(ImmediateMessageRetries)" },
+                { "name": "DelayedMessageRetries", "value": "$(DelayedMessageRetries)" },
+                { "name": "DelayedMessageRetryDelay", "value": "$(DelayedMessageRetryDelay)" }
+              ]
+
+        - task: AzureFunctionApp@1
+          displayName: 'Azure Function App Deploy'
+          inputs:
+            azureSubscription: ${{ parameters.azureSubscription }}
+            appType: functionApp
+            appName: ${{ parameters.appName }}
+            package: '$(pipeline.workspace)/ProviderpaymentsRepublish/ProviderPayments.Republish-FunctionApp.zip'

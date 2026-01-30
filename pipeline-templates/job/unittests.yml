@@ -1,0 +1,69 @@
+jobs:
+- job: UnitTests
+  pool:
+    name: DCT
+    workspace:
+      clean: all
+  
+
+
+  variables:
+    BuildConfiguration: 'Release'
+
+  steps:
+  - task: UseDotNet@2
+    displayName: 'Use .NET Core sdk 8.0.x'
+    inputs:
+      version: 8.0.x
+      performMultiLevelLookup: true
+
+  - task: DotNetCoreCLI@2
+    displayName: 'dotnet restore'
+    inputs:
+      command: restore
+      projects: src/SFA.DAS.Payments.ProviderPayments.Republish.Function.Tests/SFA.DAS.Payments.ProviderPayments.Republish.Function.Tests.csproj
+      vstsFeed: '1d5deb2d-cf8b-4bb1-b147-d13bc246e3f4'
+
+  - task: DotNetCoreCLI@2
+    displayName: 'dotnet build'
+    inputs:
+      projects: src/SFA.DAS.Payments.ProviderPayments.Republish.Function.Tests/SFA.DAS.Payments.ProviderPayments.Republish.Function.Tests.csproj
+      arguments: '--configuration $(BuildConfiguration)'
+      vstsFeed: '1d5deb2d-cf8b-4bb1-b147-d13bc246e3f4'
+
+  - task: DotNetCoreCLI@2
+    displayName: 'dotnet test UnitTest Projects'
+    inputs:
+      command: test
+      projects: src/SFA.DAS.Payments.ProviderPayments.Republish.Function.Tests/SFA.DAS.Payments.ProviderPayments.Republish.Function.Tests.csproj
+      arguments: '--filter FullyQualifiedName~UnitTests'
+
+  - task: DotNetCoreCLI@2
+    displayName: 'dotnet publish'
+    inputs:
+      command: publish
+      publishWebProjects: false
+      projects: src/SFA.DAS.Payments.ProviderPayments.Republish.Function.Tests/SFA.DAS.Payments.ProviderPayments.Republish.Function.Tests.csproj
+      arguments: '--configuration $(BuildConfiguration) --output $(build.artifactstagingdirectory)\ProviderPayments-RepublishitUnTests'
+      modifyOutputPath: false
+      vstsFeed: '1d5deb2d-cf8b-4bb1-b147-d13bc246e3f4'
+
+  #- task: MSBuild@1
+  #  displayName: 'Build solution ProviderPayments.Republish.Function'
+  #  inputs:
+  #    solution: src/SFA.DAS.Payments.ProviderPayments.Republish.Function.Tests/SFA.DAS.Payments.ProviderPayments.Republish.Function.Tests.csproj
+  #    msbuildArchitecture: x64
+  #    platform: '$(BuildPlatform)'
+  #    configuration: '$(BuildConfiguration)'
+  #    msbuildArguments: '/p:version=$(Build.BuildNumber) /p:FileVersion=$(Build.BuildNumber) /p:OutputPath=$(build.artifactstagingdirectory)\ProviderPayments-RepublishitUnTests'
+  #    clean: true
+  #    maximumCpuCount: true
+  #    logProjectEvents: true
+  #    createLogFile: true
+  #    enabled: false
+
+  - task: PublishPipelineArtifact@1
+    displayName: 'Publish Pipeline Artifact'
+    inputs:
+      targetPath: '$(build.artifactstagingdirectory)\ProviderPayments-RepublishitUnTests'
+      artifact: ProviderPayments-RepublishFunctionUnitTests
