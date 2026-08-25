@@ -41,6 +41,7 @@ jobs:
       projects: src/SFA.DAS.Payments.ProviderPayments.Republish.Function/SFA.DAS.Payments.ProviderPayments.Republish.Function.csproj
       arguments: '--configuration $(BuildConfiguration) --output $(build.artifactstagingdirectory)\ProviderPayments.Republish-FunctionApp'
       modifyOutputPath: false
+      zipAfterPublish: false
 
   - task: PublishPipelineArtifact@1
     displayName: 'Publish Pipeline Artifact'

@@ -1,53 +1,97 @@
 parameters:
-  pool:
-  azureSubscription:
-  location: 'West Europe'
-  environmentName:
-  appName:
+  ServiceConnection:
+  SolutionBaseName:
+  Environment:
+  ArtifactName:
 
 jobs:
-- deployment: DeployAzureFunctionApp
+- deployment: Deploy${{ replace(parameters.SolutionBaseName, '.', '') }}
   pool:
-    name: ${{ parameters.pool }}
+    name: DCT
     demands:
-    - ReleaseEnvironment -equals ${{ parameters.environmentName }}
-    workspace:
-      clean: all
-
-  environment: ${{ parameters.environmentName }}
-
+    - Cmd
+    - ReleaseEnvironment -equals ${{ parameters.Environment }}
+  environment: ${{ parameters.Environment }}
+  workspace:
+    clean: all
   strategy:
     runOnce:
       deploy:
         steps:
+        - checkout: self
+          clean: true
 
-        - task: AzureAppServiceSettings@1
-          displayName: 'Apply Function App Settings'
+        - task: PowerShell@2
+          displayName: 'Ensure PowerShell 7 (pwsh) is installed'
           inputs:
-            azureSubscription: ${{ parameters.azureSubscription }}
-            appName: ${{ parameters.appName }}
-            resourceGroupName: ''
-            appSettings: |
-              [
-                { "name": "AzureWebJobsStorage", "value": "$(AzureWebJobsStorage)" },
-                { "name": "ApplicationInsightsInstrumentationKey", "value": "$(ApplicationInsightsInstrumentationKey)" },
-                { "name": "FUNCTIONS_INPROC_NET8_ENABLED", "value": "$(FUNCTIONS_INPROC_NET8_ENABLED)" },
-                { "name": "FUNCTIONS_WORKER_RUNTIME", "value": "$(FUNCTIONS_WORKER_RUNTIME)" },
-                { "name": "ServiceBusConnectionString", "value": "$(ServiceBusConnectionString)" },
-                { "name": "EndpointName", "value": "$(EndpointName)" },
-                { "name": "FailedMessagesQueue", "value": "$(FailedMessagesQueue)" },
-                { "name": "DestinationEndpointName", "value": "$(DestinationEndpointName)" },
-                { "name": "NServiceBusLicense", "value": "$(NServiceBusLicense)" },
-                { "name": "StorageConnectionString", "value": "$(StorageConnectionString)" },
-                { "name": "ImmediateMessageRetries", "value": "$(ImmediateMessageRetries)" },
-                { "name": "DelayedMessageRetries", "value": "$(DelayedMessageRetries)" },
-                { "name": "DelayedMessageRetryDelay", "value": "$(DelayedMessageRetryDelay)" }
-              ]
+            targetType: inline
+            pwsh: false
+            script: |
+              $ErrorActionPreference = 'Stop'
+              $dir = Join-Path $env:LOCALAPPDATA 'pwsh7'
 
-        - task: AzureFunctionApp@1
-          displayName: 'Azure Function App Deploy'
+              if (-not (Test-Path "$dir\pwsh.exe")) {
+                $zip = Join-Path $env:TEMP 'pwsh.zip'
+                Invoke-WebRequest 'https://github.com/PowerShell/PowerShell/releases/download/v7.4.6/PowerShell-7.4.6-win-x64.zip' -OutFile $zip
+                Expand-Archive $zip $dir -Force
+                Remove-Item $zip -Force
+              }
+
+              Write-Host "##vso[task.prependpath]$dir"
+
+        - template: azure-pipelines-templates/deploy/step/wait-azure-devops-deployment.yml@das-platform-building-blocks
+          parameters:
+            EnvironmentId: $(Environment.Id)
+            PipelineName: $(Build.DefinitionName)
+            RunId: $(Build.BuildId)
+
+        - template: azure-pipelines-templates/deploy/step/arm-deploy.yml@das-platform-building-blocks
+          parameters:
+            ServiceConnection: ${{ parameters.ServiceConnection }}
+            SubscriptionId: $(SubscriptionId)
+            Location: $(ResourceGroupLocation)
+            Scope: 'Resource Group'
+            ResourceGroupName: $(ResourceGroupName)
+            Environment: ${{ parameters.Environment }}
+            TemplatePath: $(Build.SourcesDirectory)/das-payments-v2-providerpayments-republish-service/azure/template.json
+            ParametersPath: $(Build.SourcesDirectory)/das-payments-v2-providerpayments-republish-service/azure/template.parameters.json
+            IsMultiRepoCheckout: true
+            TemplateSecrets:
+              azureWebJobsStorage: $(AzureWebJobsStorage)
+              storageConnectionString: $(StorageConnectionString)
+              serviceBusConnectionString: $(ServiceBusConnectionString)
+              nServiceBusLicense: $(NServiceBusLicense)
+              applicationInsightsInstrumentationKey: $(ApplicationInsightsInstrumentationKey)
+              applicationInsightsConnectionString: $(ApplicationInsightsConnectionString)
+
+        - task: PowerShell@2
+          displayName: 'Verify ${{ parameters.ArtifactName }} has host.json at its root'
           inputs:
-            azureSubscription: ${{ parameters.azureSubscription }}
-            appType: functionApp
-            appName: ${{ parameters.appName }}
-            package: '$(pipeline.workspace)/ProviderpaymentsRepublish/ProviderPayments.Republish-FunctionApp.zip'
+            targetType: inline
+            pwsh: true
+            script: |
+              $ErrorActionPreference = 'Stop'
+              $root = '$(Pipeline.Workspace)/${{ parameters.ArtifactName }}'
+
+              if (-not (Test-Path (Join-Path $root 'host.json'))) {
+                Get-ChildItem $root | Select-Object -ExpandProperty Name | Write-Host
+                throw "host.json not found at the root of $root. The Flex Consumption deploy will be rejected by Kudu. Check that the publish task sets zipAfterPublish: false."
+              }
+
+        - task: ArchiveFiles@2
+          displayName: 'Package ${{ parameters.ArtifactName }} for Flex Consumption deploy'
+          inputs:
+            rootFolderOrFile: $(Pipeline.Workspace)/${{ parameters.ArtifactName }}
+            includeRootFolder: false
+            archiveType: zip
+            archiveFile: $(Build.ArtifactStagingDirectory)/${{ parameters.ArtifactName }}.zip
+            replaceExistingArchive: true
+
+        - task: AzureFunctionApp@2
+          displayName: 'Azure Function App Deploy - $(FunctionAppName)'
+          inputs:
+            azureSubscription: ${{ parameters.ServiceConnection }}
+            appType: functionAppLinux
+            isFlexConsumption: true
+            appName: $(FunctionAppName)
+            package: $(Build.ArtifactStagingDirectory)/${{ parameters.ArtifactName }}.zip
