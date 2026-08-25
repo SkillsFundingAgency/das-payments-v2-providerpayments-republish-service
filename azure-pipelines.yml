@@ -9,13 +9,26 @@ variables:
   value : 'x64'
 - name: BuildConfiguration
   value: 'release'
+- name: SolutionBaseName
+  value: 'SFA.DAS.Payments.ProviderPayments.Republish.Function'
+- name: ArtifactName
+  value: 'ProviderPaymentsRepublish'
+- group: Release Management Resources
+
 resources:
   repositories:
-    - repository: das-payments-v2-providerpayments-republish-service
+    - repository: self
       fetchDepth: 0
+    - repository: das-platform-building-blocks
       type: github
-      name: SkillsFundingAgency/das-payments-v2-providerpayments-republish-service
+      name: SkillsFundingAgency/das-platform-building-blocks
       endpoint: SkillsFundingAgency
+      ref: refs/heads/master
+    - repository: das-platform-automation
+      type: github
+      name: SkillsFundingAgency/das-platform-automation
+      endpoint: SkillsFundingAgency
+      ref: refs/heads/master
 
 stages:
 - stage: Build_Unit_Tests
@@ -25,24 +38,23 @@ stages:
   - template: pipeline-templates/job/unittests.yml
 
 - stage: Deploy_DST
-  displayName: 'Deploy to DST'
+  dependsOn: Build_Unit_Tests
+  displayName: Deploy to DST
   variables:
   - name: tagEnvironment
     value: Dev/Test
   - group: DCOL-DST - Environment Key Vault Secrets
   - group: DCOL-DST - ProviderPaymentsRepublishService
-  
-
   jobs:
   - template: pipeline-templates/job/deploy.yml
     parameters:
-      pool: DCT
-      environmentName: DST
-      azureSubscription: DCT-VSO
-      appName: DCOL-DST-ProviderPaymentsRepublishService
+      ServiceConnection: DCT-VSO
+      SolutionBaseName: ${{ variables.SolutionBaseName }}
+      ArtifactName: $(ArtifactName)
+      Environment: DST
 
 - stage: Deploy_DAS
-  dependsOn: Deploy_DST
+  dependsOn: Build_Unit_Tests
   displayName: Deploy to DAS
   variables:
   - name: tagEnvironment
@@ -52,13 +64,13 @@ stages:
   jobs:
   - template: pipeline-templates/job/deploy.yml
     parameters:
-      pool: DCT
-      environmentName: DAS
-      azureSubscription: DCT-VSO
-      appName: DCOL-DAS-ProviderPaymentsRepublishService
+      ServiceConnection: DCT-VSO
+      SolutionBaseName: ${{ variables.SolutionBaseName }}
+      ArtifactName: $(ArtifactName)
+      Environment: DAS
 
 - stage: Deploy_SIT
-  dependsOn: Deploy_DAS
+  dependsOn: Build_Unit_Tests
   displayName: Deploy to SIT
   variables:
   - name: tagEnvironment
@@ -68,13 +80,13 @@ stages:
   jobs:
   - template: pipeline-templates/job/deploy.yml
     parameters:
-      pool: DCT Build Pool
-      environmentName: SIT
-      azureSubscription: DCT-VSO
-      appName: DCOL-SIT-ProviderPaymentsRepublishService
+      ServiceConnection: DCT-VSO
+      SolutionBaseName: ${{ variables.SolutionBaseName }}
+      ArtifactName: $(ArtifactName)
+      Environment: SIT
 
 - stage: Deploy_ETE
-  dependsOn: Deploy_SIT
+  dependsOn: Build_Unit_Tests
   displayName: Deploy to ETE
   variables:
   - name: tagEnvironment
@@ -84,13 +96,13 @@ stages:
   jobs:
   - template: pipeline-templates/job/deploy.yml
     parameters:
-      pool: DCT Build Pool
-      environmentName: ETE
-      azureSubscription: DCT-VSO
-      appName: DCOL-ETE-ProviderPaymentsRepublishService
+      ServiceConnection: DCT-VSO
+      SolutionBaseName: ${{ variables.SolutionBaseName }}
+      ArtifactName: $(ArtifactName)
+      Environment: ETE
 
 - stage: Deploy_MO
-  dependsOn: Deploy_ETE
+  dependsOn: Build_Unit_Tests
   displayName: Deploy to MO
   variables:
   - name: tagEnvironment
@@ -100,13 +112,13 @@ stages:
   jobs:
   - template: pipeline-templates/job/deploy.yml
     parameters:
-      pool: DCT Build Pool
-      environmentName: MO
-      azureSubscription: DCOL-MO-VSTS
-      appName: DCOL-MO-ProviderPaymentsRepublishService
+      ServiceConnection: DCOL-MO-VSTS
+      SolutionBaseName: ${{ variables.SolutionBaseName }}
+      ArtifactName: $(ArtifactName)
+      Environment: MO
 
 - stage: Deploy_PD
-  dependsOn: Deploy_MO
+  dependsOn: Build_Unit_Tests
   displayName: Deploy to PD
   variables:
   - name: tagEnvironment
@@ -116,12 +128,7 @@ stages:
   jobs:
   - template: pipeline-templates/job/deploy.yml
     parameters:
-      pool: DCT Build Pool
-      environmentName: PD
-      azureSubscription: DCOLPDVSTS
-      appName: DCOL-PD-ProviderPaymentsRepublishService
-
-
-
-
-
+      ServiceConnection: DCOLPDVSTS
+      SolutionBaseName: ${{ variables.SolutionBaseName }}
+      ArtifactName: $(ArtifactName)
+      Environment: PD
