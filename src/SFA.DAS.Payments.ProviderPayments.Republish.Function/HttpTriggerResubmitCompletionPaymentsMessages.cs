@@ -11,73 +11,76 @@ using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
 
-public class HttpTriggerResubmitCompletionPaymentsMessages
+namespace SFA.DAS.Payments.ProviderPayments.Republish.Function
 {
-    private readonly IBlobStorageService _blobStorageService;
-    private readonly IServiceBusMessageDeserializationService _deserializationService;
-    private readonly ICommandPublisherService _commandPublisherService;
-    private readonly IPaymentLogger _logger;
-
-    public HttpTriggerResubmitCompletionPaymentsMessages(
-        IBlobStorageService blobStorageService,
-        IServiceBusMessageDeserializationService deserializationService,
-        ICommandPublisherService commandPublisherService,
-        IPaymentLogger logger)
+    public class HttpTriggerResubmitCompletionPaymentsMessages
     {
-        _blobStorageService = blobStorageService;
-        _deserializationService = deserializationService;
-        _commandPublisherService = commandPublisherService;
-        _logger = logger;
-    }
+        private readonly IBlobStorageService _blobStorageService;
+        private readonly IServiceBusMessageDeserializationService _deserializationService;
+        private readonly ICommandPublisherService _commandPublisherService;
+        private readonly IPaymentLogger _logger;
 
-    [Function(nameof(HttpTriggerResubmitCompletionPaymentsMessages))]
-    public async Task<IActionResult> Run([HttpTrigger(AuthorizationLevel.Function, "get", "post")] HttpRequest req)
-    {
-        try
+        public HttpTriggerResubmitCompletionPaymentsMessages(
+            IBlobStorageService blobStorageService,
+            IServiceBusMessageDeserializationService deserializationService,
+            ICommandPublisherService commandPublisherService,
+            IPaymentLogger logger)
         {
-            string requestBody = await new StreamReader(req.Body).ReadToEndAsync();
-            var resubmitRequest = JsonConvert.DeserializeObject<ResubmitCompletionPaymentMessagesRequest>(requestBody);
-            var serviceBusMessages = new List<ServiceBusMessage>();
-
-            try
-            {
-                serviceBusMessages = await _blobStorageService.GetServiceBusMessagesForReprocessing(resubmitRequest);
-            }
-            catch (Exception blobStorageException)
-            {
-                _logger.LogError("Error while retrieving JSON data from Azure Blob Storage", blobStorageException);
-                return new BadRequestResult();
-            }
-
-            var commands = new List<ProcessProviderMonthEndAct1CompletionPaymentCommand>();
-            try
-            {
-                commands = _deserializationService.DeserializeServiceBusMessages(serviceBusMessages);
-            }
-            catch (Exception deserializationException)
-            {
-                _logger.LogError("Error while deserializing messages from JSON file", deserializationException);
-                return new StatusCodeResult(StatusCodes.Status500InternalServerError);
-            }
-
-            var messagesPublished = 0;
-            try
-            {
-                messagesPublished = await _commandPublisherService.PublishCommandsToServiceBus(commands);
-            }
-            catch (Exception messagePublishingException)
-            {
-                _logger.LogError("Error while publishing messages to Azure Service Bus", messagePublishingException);
-                return new StatusCodeResult(StatusCodes.Status500InternalServerError);
-            }
-
-            _logger.LogInfo($"{messagesPublished} messages published to Azure Service Bus");
-            return new OkObjectResult(messagesPublished);
+            _blobStorageService = blobStorageService;
+            _deserializationService = deserializationService;
+            _commandPublisherService = commandPublisherService;
+            _logger = logger;
         }
-        catch (Exception unhandledException)
+
+        [Function(nameof(HttpTriggerResubmitCompletionPaymentsMessages))]
+        public async Task<IActionResult> Run([HttpTrigger(AuthorizationLevel.Function, "get", "post")] HttpRequest req)
         {
-            _logger.LogError("Unexpected error during function execution", unhandledException);
-            return new StatusCodeResult(StatusCodes.Status500InternalServerError);
+            try
+            {
+                string requestBody = await new StreamReader(req.Body).ReadToEndAsync();
+                var resubmitRequest = JsonConvert.DeserializeObject<ResubmitCompletionPaymentMessagesRequest>(requestBody);
+                var serviceBusMessages = new List<ServiceBusMessage>();
+
+                try
+                {
+                    serviceBusMessages = await _blobStorageService.GetServiceBusMessagesForReprocessing(resubmitRequest);
+                }
+                catch (Exception blobStorageException)
+                {
+                    _logger.LogError("Error while retrieving JSON data from Azure Blob Storage", blobStorageException);
+                    return new BadRequestResult();
+                }
+
+                var commands = new List<ProcessProviderMonthEndAct1CompletionPaymentCommand>();
+                try
+                {
+                    commands = _deserializationService.DeserializeServiceBusMessages(serviceBusMessages);
+                }
+                catch (Exception deserializationException)
+                {
+                    _logger.LogError("Error while deserializing messages from JSON file", deserializationException);
+                    return new StatusCodeResult(StatusCodes.Status500InternalServerError);
+                }
+
+                var messagesPublished = 0;
+                try
+                {
+                    messagesPublished = await _commandPublisherService.PublishCommandsToServiceBus(commands);
+                }
+                catch (Exception messagePublishingException)
+                {
+                    _logger.LogError("Error while publishing messages to Azure Service Bus", messagePublishingException);
+                    return new StatusCodeResult(StatusCodes.Status500InternalServerError);
+                }
+
+                _logger.LogInfo($"{messagesPublished} messages published to Azure Service Bus");
+                return new OkObjectResult(messagesPublished);
+            }
+            catch (Exception unhandledException)
+            {
+                _logger.LogError("Unexpected error during function execution", unhandledException);
+                return new StatusCodeResult(StatusCodes.Status500InternalServerError);
+            }
         }
     }
 }
