@@ -1,17 +1,15 @@
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Threading.Tasks;
-using System.Web.Http;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Azure.WebJobs;
-using Microsoft.Azure.WebJobs.Extensions.Http;
+using Microsoft.Azure.Functions.Worker;
 using Newtonsoft.Json;
 using SFA.DAS.Payments.Application.Infrastructure.Logging;
 using SFA.DAS.Payments.ProviderPayments.Messages.Internal.Commands;
 using SFA.DAS.Payments.ProviderPayments.Republish.Function.Models;
 using SFA.DAS.Payments.ProviderPayments.Republish.Function.Services;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Threading.Tasks;
 
 namespace SFA.DAS.Payments.ProviderPayments.Republish.Function
 {
@@ -34,15 +32,15 @@ namespace SFA.DAS.Payments.ProviderPayments.Republish.Function
             _logger = logger;
         }
 
-        [FunctionName("HttpTriggerResubmitCompletionPaymentsMessages")]
-        public async Task<IActionResult> Run(
-            [HttpTrigger(AuthorizationLevel.Function, "get", "post", Route = null)] HttpRequest req)
+        [Function(nameof(HttpTriggerResubmitCompletionPaymentsMessages))]
+        public async Task<IActionResult> Run([HttpTrigger(AuthorizationLevel.Function, "get", "post")] HttpRequest req)
         {
             try
             {
                 string requestBody = await new StreamReader(req.Body).ReadToEndAsync();
                 var resubmitRequest = JsonConvert.DeserializeObject<ResubmitCompletionPaymentMessagesRequest>(requestBody);
                 var serviceBusMessages = new List<ServiceBusMessage>();
+
                 try
                 {
                     serviceBusMessages = await _blobStorageService.GetServiceBusMessagesForReprocessing(resubmitRequest);
@@ -61,7 +59,7 @@ namespace SFA.DAS.Payments.ProviderPayments.Republish.Function
                 catch (Exception deserializationException)
                 {
                     _logger.LogError("Error while deserializing messages from JSON file", deserializationException);
-                    return new InternalServerErrorResult();
+                    return new StatusCodeResult(StatusCodes.Status500InternalServerError);
                 }
 
                 var messagesPublished = 0;
@@ -72,7 +70,7 @@ namespace SFA.DAS.Payments.ProviderPayments.Republish.Function
                 catch (Exception messagePublishingException)
                 {
                     _logger.LogError("Error while publishing messages to Azure Service Bus", messagePublishingException);
-                    return new InternalServerErrorResult();
+                    return new StatusCodeResult(StatusCodes.Status500InternalServerError);
                 }
 
                 _logger.LogInfo($"{messagesPublished} messages published to Azure Service Bus");
@@ -81,7 +79,7 @@ namespace SFA.DAS.Payments.ProviderPayments.Republish.Function
             catch (Exception unhandledException)
             {
                 _logger.LogError("Unexpected error during function execution", unhandledException);
-                return new InternalServerErrorResult();
+                return new StatusCodeResult(StatusCodes.Status500InternalServerError);
             }
         }
     }
