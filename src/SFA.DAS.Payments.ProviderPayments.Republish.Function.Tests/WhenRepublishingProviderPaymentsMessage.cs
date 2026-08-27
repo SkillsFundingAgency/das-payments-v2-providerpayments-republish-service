@@ -1,7 +1,6 @@
 ﻿using Microsoft.AspNetCore.Http;
 using System.Text;
 using System.Text.Json;
-using System.Web.Http;
 using Microsoft.AspNetCore.Mvc;
 using NSubstitute;
 using NSubstitute.ExceptionExtensions;
@@ -88,7 +87,8 @@ namespace SFA.DAS.Payments.ProviderPayments.Republish.Function.Tests
             var result = await _sut.Run(httpRequest);
 
             // Assert
-            result.ShouldBeAssignableTo<InternalServerErrorResult>();
+            var statusCodeResult = result.ShouldBeAssignableTo<StatusCodeResult>();
+            statusCodeResult.StatusCode.ShouldBe(500);
             _logger.Received().LogError(Arg.Any<string>(), Arg.Any<Exception>(), Arg.Any<object[]>(), Arg.Any<long>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<int>());
         }
 
@@ -143,7 +143,8 @@ namespace SFA.DAS.Payments.ProviderPayments.Republish.Function.Tests
             var result = await _sut.Run(httpRequest);
 
             // Assert
-            result.ShouldBeAssignableTo<InternalServerErrorResult>();
+            var statusCodeResult = result.ShouldBeAssignableTo<StatusCodeResult>();
+            statusCodeResult.StatusCode.ShouldBe(500);
             _logger.Received().LogError(Arg.Any<string>(), Arg.Any<Exception>(), Arg.Any<object[]>(), Arg.Any<long>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<int>());
 
         }
