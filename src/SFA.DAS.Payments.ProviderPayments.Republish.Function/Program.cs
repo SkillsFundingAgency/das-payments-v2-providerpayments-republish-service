@@ -1,17 +1,15 @@
-﻿using Autofac;
-using Autofac.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
-using SFA.DAS.Payments.ProviderPayments.Republish.Function.Modules;
+﻿using Microsoft.Extensions.Hosting;
+using SFA.DAS.Payments.ProviderPayments.Republish.Function.ServiceRegistrations;
 
 var host = new HostBuilder()
     .ConfigureFunctionsWebApplication()
-    .UseServiceProviderFactory(new AutofacServiceProviderFactory())
-    .ConfigureContainer<ContainerBuilder>(builder =>
+    .ConfigureServices(services =>
     {
-        builder.RegisterModule<ConfigurationModule>();
-        builder.RegisterModule<FunctionsModule>();
-        builder.RegisterModule<LoggingModule>();
-        builder.RegisterModule<TelemetryModule>();
+        services
+            .AddConfigurationServices()
+            .AddFunctionServices()
+            .AddLoggingServices()
+            .AddTelemetryServices();
     })
     .Build();
 
