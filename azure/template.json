@@ -1,0 +1,250 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "functionAppName": {
+      "type": "string"
+    },
+    "environmentName": {
+      "type": "string",
+      "metadata": {
+        "description": "Short environment name, e.g. DAS, DST, SIT, ETE, MO, PD. Applied as a resource tag."
+      }
+    },
+    "storageAccountName": {
+      "type": "string",
+      "metadata": {
+        "description": "Name of the existing storage account used for the Flex Consumption deployment container"
+      }
+    },
+    "vnetName": {
+      "type": "string",
+      "defaultValue": "[concat('DCOL-', parameters('environmentName'), '-VNET-WEU')]",
+      "metadata": {
+        "description": "VNet holding the function app integration subnet. Defaults to the DCOL-<ENV>-VNET-WEU naming pattern; override for environments that don't follow it."
+      }
+    },
+    "vnetResourceGroupName": {
+      "type": "string",
+      "defaultValue": "[parameters('vnetName')]",
+      "metadata": {
+        "description": "Resource group holding the VNet. Defaults to the VNet name, which is the pattern used by every environment so far."
+      }
+    },
+    "functionAppSubnetName": {
+      "type": "string",
+      "defaultValue": "DCOL-FunctionApp-Integration-Subnet"
+    },
+    "deploymentContainerName": {
+      "type": "string",
+      "defaultValue": "providerpayments-republish-app-package",
+      "metadata": {
+        "description": "Blob container the Flex Consumption package is deployed to. Must already exist and must not be shared with another function app."
+      }
+    },
+    "maximumInstanceCount": {
+      "type": "int",
+      "defaultValue": 100
+    },
+    "instanceMemoryMB": {
+      "type": "int",
+      "defaultValue": 2048,
+      "allowedValues": [
+        512,
+        2048,
+        4096
+      ]
+    },
+    "endpointName": {
+      "type": "string",
+      "defaultValue": "sfa-das-payments-providerpayments-republish",
+      "metadata": {
+        "description": "NServiceBus endpoint this function publishes as"
+      }
+    },
+    "destinationEndpointName": {
+      "type": "string",
+      "defaultValue": "sfa-das-payments-providerpayments",
+      "metadata": {
+        "description": "NServiceBus endpoint the republished commands are sent to"
+      }
+    },
+    "failedMessagesQueue": {
+      "type": "string",
+      "defaultValue": "sfa-das-payments-providerpayments-republish-errors"
+    },
+    "immediateMessageRetries": {
+      "type": "string",
+      "defaultValue": "1"
+    },
+    "delayedMessageRetries": {
+      "type": "string",
+      "defaultValue": "3"
+    },
+    "delayedMessageRetryDelay": {
+      "type": "string",
+      "defaultValue": "00:00:10"
+    },
+    "azureWebJobsStorage": {
+      "type": "securestring",
+      "metadata": {
+        "description": "Connection string for the storage account the Functions host uses for internal state and for the deployment container"
+      }
+    },
+    "storageConnectionString": {
+      "type": "securestring",
+      "metadata": {
+        "description": "Connection string used by NServiceBus and by BlobStorageService for the message blobs"
+      }
+    },
+    "serviceBusConnectionString": {
+      "type": "securestring"
+    },
+    "nServiceBusLicense": {
+      "type": "securestring"
+    },
+    "applicationInsightsInstrumentationKey": {
+      "type": "securestring",
+      "metadata": {
+        "description": "Value for the ApplicationInsightsInstrumentationKey setting read by the application's TelemetryConfiguration"
+      }
+    },
+    "applicationInsightsConnectionString": {
+      "type": "securestring",
+      "metadata": {
+        "description": "Connection string for the Application Insights resource. Required on Flex Consumption, which has no filesystem log streaming"
+      }
+    }
+  },
+  "variables": {
+    "functionAppApiVersion": "2023-12-01",
+    "deploymentStorageContainerUri": "[concat('https://', parameters('storageAccountName'), '.blob.core.windows.net/', parameters('deploymentContainerName'))]",
+    "functionAppSubnetId": "[resourceId(parameters('vnetResourceGroupName'), 'Microsoft.Network/virtualNetworks/subnets', parameters('vnetName'), parameters('functionAppSubnetName'))]",
+    "appSettings": [
+      {
+        "name": "APPLICATIONINSIGHTS_CONNECTION_STRING",
+        "value": "[parameters('applicationInsightsConnectionString')]"
+      },
+      {
+        "name": "ApplicationInsightsInstrumentationKey",
+        "value": "[parameters('applicationInsightsInstrumentationKey')]"
+      },
+      {
+        "name": "AzureWebJobsStorage",
+        "value": "[parameters('azureWebJobsStorage')]"
+      },
+      {
+        "name": "DEPLOYMENT_STORAGE_CONNECTION_STRING",
+        "value": "[parameters('azureWebJobsStorage')]"
+      },
+      {
+        "name": "DelayedMessageRetries",
+        "value": "[parameters('delayedMessageRetries')]"
+      },
+      {
+        "name": "DelayedMessageRetryDelay",
+        "value": "[parameters('delayedMessageRetryDelay')]"
+      },
+      {
+        "name": "DestinationEndpointName",
+        "value": "[parameters('destinationEndpointName')]"
+      },
+      {
+        "name": "EndpointName",
+        "value": "[parameters('endpointName')]"
+      },
+      {
+        "name": "FailedMessagesQueue",
+        "value": "[parameters('failedMessagesQueue')]"
+      },
+      {
+        "name": "ImmediateMessageRetries",
+        "value": "[parameters('immediateMessageRetries')]"
+      },
+      {
+        "name": "NServiceBusLicense",
+        "value": "[parameters('nServiceBusLicense')]"
+      },
+      {
+        "name": "ServiceBusConnectionString",
+        "value": "[parameters('serviceBusConnectionString')]"
+      },
+      {
+        "name": "StorageConnectionString",
+        "value": "[parameters('storageConnectionString')]"
+      }
+    ]
+  },
+  "resources": [
+    {
+      "name": "[parameters('functionAppName')]",
+      "type": "Microsoft.Web/serverfarms",
+      "apiVersion": "2023-12-01",
+      "location": "[resourceGroup().location]",
+      "tags": {
+        "Environment": "[parameters('environmentName')]"
+      },
+      "sku": {
+        "name": "FC1",
+        "tier": "FlexConsumption"
+      },
+      "kind": "functionapp",
+      "properties": {
+        "reserved": true
+      }
+    },
+    {
+      "name": "[parameters('functionAppName')]",
+      "type": "Microsoft.Web/sites",
+      "kind": "functionapp,linux",
+      "apiVersion": "[variables('functionAppApiVersion')]",
+      "location": "[resourceGroup().location]",
+      "tags": {
+        "Environment": "[parameters('environmentName')]"
+      },
+      "identity": {
+        "type": "SystemAssigned"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Web/serverfarms', parameters('functionAppName'))]"
+      ],
+      "properties": {
+        "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', parameters('functionAppName'))]",
+        "virtualNetworkSubnetId": "[variables('functionAppSubnetId')]",
+        "clientAffinityEnabled": false,
+        "httpsOnly": true,
+        "siteConfig": {
+          "appSettings": "[variables('appSettings')]",
+          "minTlsVersion": "1.2",
+          "ftpsState": "Disabled"
+        },
+        "functionAppConfig": {
+          "deployment": {
+            "storage": {
+              "type": "blobContainer",
+              "value": "[variables('deploymentStorageContainerUri')]",
+              "authentication": {
+                "type": "StorageAccountConnectionString",
+                "storageAccountConnectionStringName": "DEPLOYMENT_STORAGE_CONNECTION_STRING"
+              }
+            }
+          },
+          "scaleAndConcurrency": {
+            "maximumInstanceCount": "[parameters('maximumInstanceCount')]",
+            "instanceMemoryMB": "[parameters('instanceMemoryMB')]"
+          },
+          "runtime": {
+            "name": "dotnet-isolated",
+            "version": "8.0"
+          }
+        }
+      }
+    }
+  ],
+  "outputs": {
+    "managedServiceIdentityId": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.Web/sites', parameters('functionAppName')), variables('functionAppApiVersion'), 'Full').identity.principalId]"
+    }
+  }
+}
